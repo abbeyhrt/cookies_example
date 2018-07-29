@@ -47,19 +47,21 @@ func main() {
 
 		sc := securecookie.New(hashKey, blockKey)
 
-		cookieValue := map[string]string{}
-		encoded, err := sc.Encode("encoded_cookie", cookieValue)
-		encodedCookie := &http.Cookie{
-			Name:   "encodedCookie",
-			Value:  encoded,
-			MaxAge: 10000,
+		value := map[string]string{
+			"value": "1234",
 		}
-		if err != nil {
-			http.Error(w, "error making cookie", http.StatusInternalServerError)
-			return
+		if encoded, err := sc.Encode("encoded_cookie", value); err == nil {
+			encodedCookie := &http.Cookie{
+				Name:   "encoded_cookie",
+				Value:  encoded,
+				MaxAge: 10000,
+			}
+			if err != nil {
+				http.Error(w, "error making cookie", http.StatusInternalServerError)
+				return
+			}
+			http.SetCookie(w, encodedCookie)
 		}
-		//r.AddCookie(encodedCookie)
-		http.SetCookie(w, encodedCookie)
 	})
 
 	r.HandleFunc("/decoded_cookie", func(w http.ResponseWriter, r *http.Request) {
@@ -72,8 +74,9 @@ func main() {
 
 		value := make(map[string]string)
 
-		if decodedCookie, err := r.Cookie("encodedCookie"); err == nil {
-			err = sc.Decode("encodedCookie", decodedCookie.Value, &value)
+		if decodedCookie, err := r.Cookie("encoded_cookie"); err == nil {
+			err = sc.Decode("encoded_cookie", decodedCookie.Value, &value)
+			fmt.Fprintf(w, "This is the value: %s", value["value"])
 			if err != nil {
 				fmt.Println(err)
 				http.Error(w, "error", http.StatusInternalServerError)
